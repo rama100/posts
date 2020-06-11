@@ -1,4 +1,4 @@
-# load the usual packages
+# load utility packages
 library(dplyr)
 library(tidyr)
 library(ggplot2)
