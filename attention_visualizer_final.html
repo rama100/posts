@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single-Head Attention Visualizer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #141b2d;
+            --accent-blue: #4a9eff;
+            --accent-gold: #ffa94d;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --border: #2a3447;
+            --matrix-bg: #1a2332;
+        }
+        
+        body {
+            font-family: 'Crimson Pro', serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-blue);
+        }
+        
+        .controls-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            animation: fadeIn 1s ease-out 0.2s both;
+        }
+        
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .controls-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .controls-row .control-group {
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--matrix-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+        }
+        
+        .param-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .playback-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+        
+        button {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Crimson Pro', serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        button:hover {
+            background: var(--accent-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 169, 77, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .visualization-area {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            min-height: 600px;
+            animation: fadeIn 1s ease-out 0.4s both;
+        }
+        
+        .step-indicator {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--matrix-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-blue);
+        }
+        
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-gold);
+        }
+        
+        .step-formula {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+        
+        .matrices-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .matrix-wrapper {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .matrix-label {
+            text-align: center;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+        }
+        
+        .matrix-dimensions {
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .matrix {
+            display: inline-block;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--matrix-bg);
+        }
+        
+        .matrix-row {
+            display: flex;
+        }
+        
+        .matrix-cell {
+            min-width: 60px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .matrix-cell:hover {
+            background: rgba(74, 158, 255, 0.1);
+            z-index: 10;
+        }
+        
+        .matrix-cell.highlight {
+            background: rgba(74, 158, 255, 0.2);
+            border-color: var(--accent-blue);
+        }
+        
+        .heatmap-cell {
+            background: var(--matrix-bg);
+            transition: background-color 0.3s;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: var(--bg-primary);
+            border: 1px solid var(--accent-blue);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tooltip.show {
+            opacity: 1;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 2rem;
+            color: var(--accent-gold);
+            margin: 1rem 0;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+        
+        .tokens-display {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        
+        .token {
+            padding: 0;
+            margin: 0;
+            background: var(--matrix-bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            color: var(--accent-gold);
+            animation: fadeInUp 0.6s ease-out forwards;
+            min-width: 80px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>How the input flows through a Transformer Encoder block</h1>
+        </header>
+        
+        <div class="controls-panel">
+            <div class="controls-row">
+                <div class="control-group">
+                    <label for="input-text">Input Sequence</label>
+                    <input type="text" id="input-text" value="The cat sat on the">
+                </div>
+                
+                <div class="control-group">
+                    <label for="d-model">d_model (embedding dimension)</label>
+                    <input type="number" id="d-model" value="3" min="1" max="512" step="1">
+                </div>
+                
+                <div class="control-group">
+                    <label for="d-k">d_k (query/key dimension)</label>
+                    <input type="number" id="d-k" value="4" min="1" max="512" step="1">
+                </div>
+            </div>
+            
+            <div class="playback-controls">
+                <button id="step-back">← Step Back</button>
+                <button id="play-pause">▶ Play</button>
+                <button id="step-forward">Step Forward →</button>
+                <button id="reset">Reset</button>
+            </div>
+        </div>
+        
+        <div class="visualization-area">
+            <div class="step-indicator">
+                <div class="step-title" id="step-title">Step 0: Input Embeddings</div>
+                <div class="step-formula" id="step-formula">X ∈ ℝ^(seq_len × d_model)</div>
+            </div>
+            
+            <div id="visualization-content">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // State management
+        let state = {
+            currentStep: 0,
+            isPlaying: false,
+            inputText: "The cat sat on the",
+            dModel: 3,
+            dK: 4,
+            tokens: [],
+            X: null,  // Input embeddings
+            Wq: null, // Query weight matrix (head 1)
+            Wk: null, // Key weight matrix (head 1)
+            Wv: null, // Value weight matrix (head 1)
+            Q: null,  // Query matrix (head 1)
+            K: null,  // Key matrix (head 1)
+            V: null,  // Value matrix (head 1)
+            scores: null, // Attention scores (Q·K^T) (head 1)
+            scaledScores: null, // Scaled scores (head 1)
+            weights: null, // Attention weights (softmax) (head 1)
+            output: null,  // Final output (weights·V) (head 1)
+            // Head 2 variables
+            Wq2: null,
+            Wk2: null,
+            Wv2: null,
+            Q2: null,
+            K2: null,
+            V2: null,
+            scores2: null,
+            scaledScores2: null,
+            weights2: null,
+            output2: null,
+            // Multi-head output
+            concatenated: null, // Concatenated heads
+            Wo: null, // Output projection matrix
+            multiHeadOutput: null, // After output projection
+            finalOutput: null, // After residual connection
+            // Layer normalization
+            layerNormOutput: null, // After first layer norm
+            // MLP
+            W1: null, // First MLP weight (d_model x d_ff)
+            b1: null, // First MLP bias
+            mlpHidden: null, // After first linear + GELU
+            W2: null, // Second MLP weight (d_ff x d_model)
+            b2: null, // Second MLP bias
+            mlpOutput: null, // After second linear
+            // Second residual and layer norm
+            finalOutput2: null, // After second residual
+            layerNormOutput2: null // After second layer norm
+        };
+        
+        const steps = [
+            {
+                title: "Step 0: Look up embeddings for input tokens",
+                formula: "X ∈ ℝ^(seq_len × d_model)",
+                description: "Each token is represented as a d_model-dimensional vector"
+            },
+            {
+                title: "Step 1: Project with Query matrix",
+                formula: "Q = X · W_q, where W_q ∈ ℝ^(d_model × d_k)",
+                description: "Linear transformation to create queries"
+            },
+            {
+                title: "Step 2: Project with Key matrix",
+                formula: "K = X · W_k, where W_k ∈ ℝ^(d_model × d_k)",
+                description: "Linear transformation to create keys"
+            },
+            {
+                title: "Step 3: Project with Value matrix",
+                formula: "V = X · W_v, where W_v ∈ ℝ^(d_model × d_k)",
+                description: "Linear transformation to create values"
+            },
+            {
+                title: "Step 4: Compute Attention Scores",
+                formula: "scores = Q · K^T ∈ ℝ^(seq_len × seq_len)",
+                description: "Measure similarity between queries and keys"
+            },
+            {
+                title: "Step 5: Scale Scores",
+                formula: "scaled_scores = scores / √d_k",
+                description: "Scale by square root of key dimension for stability"
+            },
+            {
+                title: "Step 6: Apply Softmax",
+                formula: "weights = softmax(scaled_scores)",
+                description: "Convert scores to probability distribution"
+            },
+            {
+                title: "Step 7: Compute Output",
+                formula: "output = weights · V ∈ ℝ^(seq_len × d_k)",
+                description: "Weighted combination of value vectors"
+            },
+            {
+                title: "Step 8: Multi-Head Attention (2 heads)",
+                formula: "MultiHead(X) = Concat(head₁, head₂) · W_o",
+                description: "Run attention in parallel with different learned projections"
+            },
+            {
+                title: "Step 9: Residual Connection",
+                formula: "output_residual = X + MultiHead(X)",
+                description: "Add the input back to the attention output"
+            },
+            {
+                title: "Step 10: Layer Normalization",
+                formula: "output_norm = LayerNorm(output_residual)",
+                description: "Normalize each token's representation independently"
+            },
+            {
+                title: "Step 11: MLP Layer",
+                formula: "MLP(x) = GELU(x · W₁) · W₂",
+                description: "Two-layer feed-forward network with GELU activation"
+            },
+            {
+                title: "Step 12: Second Residual Connection",
+                formula: "output_residual2 = output_norm + MLP(output_norm)",
+                description: "Add the normalized input to MLP output"
+            },
+            {
+                title: "Step 13: Second Layer Normalization",
+                formula: "output_final = LayerNorm(output_residual2)",
+                description: "Final normalization of the transformer layer output"
+            },
+            {
+                title: "Summary: Complete Transformer Encoder Block",
+                formula: "X → Transformer Block → Output",
+                description: "Overview of input and output through the entire encoder block"
+            }
+        ];
+        
+        // Initialize
+        function initialize() {
+            state.tokens = state.inputText.trim().split(/\s+/);
+            const seqLen = state.tokens.length;
+            const dFF = state.dModel * 4; // MLP hidden dimension
+            
+            // Initialize matrices with random values
+            state.X = randomMatrix(seqLen, state.dModel);
+            
+            // Head 1
+            state.Wq = randomMatrix(state.dModel, state.dK);
+            state.Wk = randomMatrix(state.dModel, state.dK);
+            state.Wv = randomMatrix(state.dModel, state.dK);
+            
+            // Compute head 1
+            state.Q = matmul(state.X, state.Wq);
+            state.K = matmul(state.X, state.Wk);
+            state.V = matmul(state.X, state.Wv);
+            state.scores = matmul(state.Q, transpose(state.K));
+            state.scaledScores = scaleMatrix(state.scores, 1 / Math.sqrt(state.dK));
+            state.weights = softmaxMatrix(state.scaledScores);
+            state.output = matmul(state.weights, state.V);
+            
+            // Head 2
+            state.Wq2 = randomMatrix(state.dModel, state.dK);
+            state.Wk2 = randomMatrix(state.dModel, state.dK);
+            state.Wv2 = randomMatrix(state.dModel, state.dK);
+            
+            state.Q2 = matmul(state.X, state.Wq2);
+            state.K2 = matmul(state.X, state.Wk2);
+            state.V2 = matmul(state.X, state.Wv2);
+            state.scores2 = matmul(state.Q2, transpose(state.K2));
+            state.scaledScores2 = scaleMatrix(state.scores2, 1 / Math.sqrt(state.dK));
+            state.weights2 = softmaxMatrix(state.scaledScores2);
+            state.output2 = matmul(state.weights2, state.V2);
+            
+            // Concatenate heads (each row: [head1_output | head2_output])
+            state.concatenated = state.output.map((row, i) => [...row, ...state.output2[i]]);
+            
+            // Output projection (2*d_k -> d_model to match input dimensions)
+            state.Wo = randomMatrix(2 * state.dK, state.dModel);
+            state.multiHeadOutput = matmul(state.concatenated, state.Wo);
+            
+            // First residual connection
+            state.finalOutput = addMatrices(state.X, state.multiHeadOutput);
+            
+            // First layer normalization
+            state.layerNormOutput = layerNorm(state.finalOutput);
+            
+            // MLP
+            state.W1 = randomMatrix(state.dModel, dFF);
+            state.b1 = Array(dFF).fill(0).map(() => Math.random() - 0.5);
+            state.W2 = randomMatrix(dFF, state.dModel);
+            state.b2 = Array(state.dModel).fill(0).map(() => Math.random() - 0.5);
+            
+            // MLP forward pass
+            const mlpInput = matmul(state.layerNormOutput, state.W1);
+            const mlpInputBiased = mlpInput.map(row => row.map((val, i) => val + state.b1[i]));
+            state.mlpHidden = mlpInputBiased.map(row => row.map(gelu));
+            const mlpOutput = matmul(state.mlpHidden, state.W2);
+            state.mlpOutput = mlpOutput.map(row => row.map((val, i) => val + state.b2[i]));
+            
+            // Second residual connection
+            state.finalOutput2 = addMatrices(state.layerNormOutput, state.mlpOutput);
+            
+            // Second layer normalization
+            state.layerNormOutput2 = layerNorm(state.finalOutput2);
+            
+            render();
+        }
+        
+        // Matrix operations
+        function randomMatrix(rows, cols) {
+            return Array(rows).fill(0).map(() => 
+                Array(cols).fill(0).map(() => (Math.random() - 0.5) * 2)
+            );
+        }
+        
+        function matmul(A, B) {
+            const rows = A.length;
+            const cols = B[0].length;
+            const inner = B.length;
+            const result = Array(rows).fill(0).map(() => Array(cols).fill(0));
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    for (let k = 0; k < inner; k++) {
+                        result[i][j] += A[i][k] * B[k][j];
+                    }
+                }
+            }
+            return result;
+        }
+        
+        function transpose(A) {
+            const rows = A.length;
+            const cols = A[0].length;
+            const result = Array(cols).fill(0).map(() => Array(rows).fill(0));
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[j][i] = A[i][j];
+                }
+            }
+            return result;
+        }
+        
+        function scaleMatrix(A, scale) {
+            return A.map(row => row.map(val => val * scale));
+        }
+        
+        function softmaxMatrix(A) {
+            return A.map(row => softmax(row));
+        }
+        
+        function softmax(arr) {
+            const max = Math.max(...arr);
+            const exps = arr.map(x => Math.exp(x - max));
+            const sum = exps.reduce((a, b) => a + b, 0);
+            return exps.map(x => x / sum);
+        }
+        
+        function addMatrices(A, B) {
+            return A.map((row, i) => row.map((val, j) => val + B[i][j]));
+        }
+        
+        function layerNorm(matrix) {
+            // Normalize each row independently
+            return matrix.map(row => {
+                const mean = row.reduce((a, b) => a + b, 0) / row.length;
+                const variance = row.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / row.length;
+                const std = Math.sqrt(variance + 1e-5); // Add small epsilon for numerical stability
+                return row.map(val => (val - mean) / std);
+            });
+        }
+        
+        function gelu(x) {
+            // GELU activation: 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x^3)))
+            const sqrt2OverPi = Math.sqrt(2 / Math.PI);
+            return 0.5 * x * (1 + Math.tanh(sqrt2OverPi * (x + 0.044715 * Math.pow(x, 3))));
+        }
+        
+        // Rendering
+        function render() {
+            const stepInfo = steps[state.currentStep];
+            document.getElementById('step-title').textContent = stepInfo.title;
+            document.getElementById('step-formula').textContent = stepInfo.formula;
+            
+            const content = document.getElementById('visualization-content');
+            content.innerHTML = '';
+            
+            switch(state.currentStep) {
+                case 0:
+                    renderInputEmbeddings(content);
+                    break;
+                case 1:
+                    renderQueryCreation(content);
+                    break;
+                case 2:
+                    renderKeyCreation(content);
+                    break;
+                case 3:
+                    renderValueCreation(content);
+                    break;
+                case 4:
+                    renderAttentionScores(content);
+                    break;
+                case 5:
+                    renderScaledScores(content);
+                    break;
+                case 6:
+                    renderAttentionWeights(content);
+                    break;
+                case 7:
+                    renderOutput(content);
+                    break;
+                case 8:
+                    renderMultiHeadAttention(content);
+                    break;
+                case 9:
+                    renderResidualConnection(content);
+                    break;
+                case 10:
+                    renderLayerNorm(content);
+                    break;
+                case 11:
+                    renderMLP(content);
+                    break;
+                case 12:
+                    renderSecondResidual(content);
+                    break;
+                case 13:
+                    renderSecondLayerNorm(content);
+                    break;
+                case 14:
+                    renderSummary(content);
+                    break;
+            }
+        }
+        
+        function renderInputEmbeddings(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px'; // Offset for label and dimensions
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokenDiv.style.animationDelay = `${i * 0.1}s`;
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            // Arrow
+            const arrow = document.createElement('div');
+            arrow.className = 'arrow';
+            arrow.textContent = '→';
+            arrow.style.margin = '0';
+            arrow.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow);
+            
+            // Embeddings matrix
+            renderMatrixHorizontal(mainContainer, state.X, 'X (Input Embeddings)', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderQueryCreation(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px'; // Offset for label and dimensions
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokenDiv.style.animationDelay = `${i * 0.1}s`;
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            // Arrow
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            // X matrix
+            renderMatrixHorizontal(mainContainer, state.X, 'X', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.margin = '0';
+            mult.style.alignSelf = 'center';
+            mainContainer.appendChild(mult);
+            
+            renderMatrix(mainContainer, state.Wq, 'W_q', 
+                `${state.dModel} × ${state.dK}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.margin = '0';
+            equals.style.alignSelf = 'center';
+            mainContainer.appendChild(equals);
+            
+            renderMatrixHorizontal(mainContainer, state.Q, 'Q (Query)', 
+                `${state.tokens.length} × ${state.dK}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderKeyCreation(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px'; // Offset for label and dimensions
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokenDiv.style.animationDelay = `${i * 0.1}s`;
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            // Arrow
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            // X matrix
+            renderMatrixHorizontal(mainContainer, state.X, 'X', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.margin = '0';
+            mult.style.alignSelf = 'center';
+            mainContainer.appendChild(mult);
+            
+            renderMatrix(mainContainer, state.Wk, 'W_k', 
+                `${state.dModel} × ${state.dK}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.margin = '0';
+            equals.style.alignSelf = 'center';
+            mainContainer.appendChild(equals);
+            
+            renderMatrixHorizontal(mainContainer, state.K, 'K (Key)', 
+                `${state.tokens.length} × ${state.dK}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderValueCreation(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px'; // Offset for label and dimensions
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokenDiv.style.animationDelay = `${i * 0.1}s`;
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            // Arrow
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            // X matrix
+            renderMatrixHorizontal(mainContainer, state.X, 'X', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.margin = '0';
+            mult.style.alignSelf = 'center';
+            mainContainer.appendChild(mult);
+            
+            renderMatrix(mainContainer, state.Wv, 'W_v', 
+                `${state.dModel} × ${state.dK}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.margin = '0';
+            equals.style.alignSelf = 'center';
+            mainContainer.appendChild(equals);
+            
+            renderMatrixHorizontal(mainContainer, state.V, 'V (Value)', 
+                `${state.tokens.length} × ${state.dK}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderAttentionScores(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px'; // Offset for label and dimensions
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokenDiv.style.animationDelay = `${i * 0.1}s`;
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            // Arrow
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            // Q matrix
+            renderMatrixHorizontal(mainContainer, state.Q, 'Q', 
+                `${state.tokens.length} × ${state.dK}`);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.margin = '0';
+            mult.style.alignSelf = 'center';
+            mainContainer.appendChild(mult);
+            
+            renderMatrix(mainContainer, transpose(state.K), 'K^T', 
+                `${state.dK} × ${state.tokens.length}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.margin = '0';
+            equals.style.alignSelf = 'center';
+            mainContainer.appendChild(equals);
+            
+            renderMatrix(mainContainer, state.scores, 'Scores', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderScaledScores(container) {
+            const matricesContainer = document.createElement('div');
+            matricesContainer.className = 'matrices-container';
+            
+            renderMatrix(matricesContainer, state.scores, 'Scores', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            const div = document.createElement('div');
+            div.className = 'arrow';
+            div.textContent = `÷ √${state.dK}`;
+            div.style.alignSelf = 'center';
+            matricesContainer.appendChild(div);
+            
+            renderMatrix(matricesContainer, state.scaledScores, 'Scaled Scores', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            container.appendChild(matricesContainer);
+        }
+        
+        function renderAttentionWeights(container) {
+            const matricesContainer = document.createElement('div');
+            matricesContainer.className = 'matrices-container';
+            
+            renderMatrix(matricesContainer, state.scaledScores, 'Scaled Scores', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            const softmax = document.createElement('div');
+            softmax.className = 'arrow';
+            softmax.textContent = 'softmax →';
+            softmax.style.alignSelf = 'center';
+            matricesContainer.appendChild(softmax);
+            
+            renderMatrixWithRowSums(matricesContainer, state.weights, 'Attention Weights', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            container.appendChild(matricesContainer);
+        }
+        
+        function renderOutput(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px'; // Offset for label and dimensions
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokenDiv.style.animationDelay = `${i * 0.1}s`;
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            // Arrow
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            // Attention weights
+            renderMatrix(mainContainer, state.weights, 'Attention Weights', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.margin = '0';
+            mult.style.alignSelf = 'center';
+            mainContainer.appendChild(mult);
+            
+            renderMatrixHorizontal(mainContainer, state.V, 'V', 
+                `${state.tokens.length} × ${state.dK}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.margin = '0';
+            equals.style.alignSelf = 'center';
+            mainContainer.appendChild(equals);
+            
+            renderMatrixHorizontal(mainContainer, state.output, 'Output', 
+                `${state.tokens.length} × ${state.dK}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderMultiHeadAttention(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.flexDirection = 'column';
+            mainContainer.style.gap = '3rem';
+            mainContainer.style.alignItems = 'center';
+            
+            // Head 1 section
+            const head1Section = document.createElement('div');
+            head1Section.style.width = '100%';
+            const head1Title = document.createElement('div');
+            head1Title.style.textAlign = 'center';
+            head1Title.style.fontSize = '1.3rem';
+            head1Title.style.color = 'var(--accent-gold)';
+            head1Title.style.marginBottom = '1rem';
+            head1Title.style.fontWeight = '600';
+            head1Title.textContent = 'Head 1';
+            head1Section.appendChild(head1Title);
+            
+            const head1Container = document.createElement('div');
+            head1Container.style.display = 'flex';
+            head1Container.style.alignItems = 'flex-start';
+            head1Container.style.gap = '2rem';
+            head1Container.style.justifyContent = 'center';
+            head1Container.style.flexWrap = 'wrap';
+            
+            // Tokens for head 1
+            const tokensColumn1 = document.createElement('div');
+            tokensColumn1.style.display = 'flex';
+            tokensColumn1.style.flexDirection = 'column';
+            tokensColumn1.style.gap = '4px';
+            tokensColumn1.style.marginTop = '70px';
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokensColumn1.appendChild(tokenDiv);
+            });
+            
+            head1Container.appendChild(tokensColumn1);
+            
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            head1Container.appendChild(arrow1);
+            
+            renderMatrixHorizontal(head1Container, state.output, 'Head 1 Output', 
+                `${state.tokens.length} × ${state.dK}`);
+            
+            head1Section.appendChild(head1Container);
+            mainContainer.appendChild(head1Section);
+            
+            // Head 2 section
+            const head2Section = document.createElement('div');
+            head2Section.style.width = '100%';
+            const head2Title = document.createElement('div');
+            head2Title.style.textAlign = 'center';
+            head2Title.style.fontSize = '1.3rem';
+            head2Title.style.color = 'var(--accent-gold)';
+            head2Title.style.marginBottom = '1rem';
+            head2Title.style.fontWeight = '600';
+            head2Title.textContent = 'Head 2';
+            head2Section.appendChild(head2Title);
+            
+            const head2Container = document.createElement('div');
+            head2Container.style.display = 'flex';
+            head2Container.style.alignItems = 'flex-start';
+            head2Container.style.gap = '2rem';
+            head2Container.style.justifyContent = 'center';
+            head2Container.style.flexWrap = 'wrap';
+            
+            // Tokens for head 2
+            const tokensColumn2 = document.createElement('div');
+            tokensColumn2.style.display = 'flex';
+            tokensColumn2.style.flexDirection = 'column';
+            tokensColumn2.style.gap = '4px';
+            tokensColumn2.style.marginTop = '70px';
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokensColumn2.appendChild(tokenDiv);
+            });
+            
+            head2Container.appendChild(tokensColumn2);
+            
+            const arrow2 = document.createElement('div');
+            arrow2.className = 'arrow';
+            arrow2.textContent = '→';
+            arrow2.style.margin = '0';
+            arrow2.style.alignSelf = 'center';
+            head2Container.appendChild(arrow2);
+            
+            renderMatrixHorizontal(head2Container, state.output2, 'Head 2 Output', 
+                `${state.tokens.length} × ${state.dK}`);
+            
+            head2Section.appendChild(head2Container);
+            mainContainer.appendChild(head2Section);
+            
+            // Concatenation and projection
+            const combinedSection = document.createElement('div');
+            combinedSection.style.width = '100%';
+            combinedSection.style.marginTop = '2rem';
+            
+            const combContainer = document.createElement('div');
+            combContainer.style.display = 'flex';
+            combContainer.style.alignItems = 'flex-start';
+            combContainer.style.gap = '2rem';
+            combContainer.style.justifyContent = 'center';
+            combContainer.style.flexWrap = 'wrap';
+            
+            // Tokens for combined
+            const tokensColumn3 = document.createElement('div');
+            tokensColumn3.style.display = 'flex';
+            tokensColumn3.style.flexDirection = 'column';
+            tokensColumn3.style.gap = '4px';
+            tokensColumn3.style.marginTop = '70px';
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokensColumn3.appendChild(tokenDiv);
+            });
+            
+            combContainer.appendChild(tokensColumn3);
+            
+            const arrow3 = document.createElement('div');
+            arrow3.className = 'arrow';
+            arrow3.textContent = '→';
+            arrow3.style.margin = '0';
+            arrow3.style.alignSelf = 'center';
+            combContainer.appendChild(arrow3);
+            
+            renderMatrixHorizontal(combContainer, state.concatenated, 'Concat(Head₁, Head₂)', 
+                `${state.tokens.length} × ${2 * state.dK}`);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.margin = '0';
+            mult.style.alignSelf = 'center';
+            combContainer.appendChild(mult);
+            
+            renderMatrix(combContainer, state.Wo, 'W_o', 
+                `${2 * state.dK} × ${state.dModel}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.margin = '0';
+            equals.style.alignSelf = 'center';
+            combContainer.appendChild(equals);
+            
+            renderMatrixHorizontal(combContainer, state.multiHeadOutput, 'MultiHead Output', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            combinedSection.appendChild(combContainer);
+            mainContainer.appendChild(combinedSection);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderResidualConnection(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px';
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokenDiv.style.animationDelay = `${i * 0.1}s`;
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            // Arrow
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            renderMatrixHorizontal(mainContainer, state.X, 'X (Original Input)', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const plus = document.createElement('div');
+            plus.className = 'arrow';
+            plus.textContent = '+';
+            plus.style.margin = '0';
+            plus.style.alignSelf = 'center';
+            mainContainer.appendChild(plus);
+            
+            renderMatrixHorizontal(mainContainer, state.multiHeadOutput, 'MultiHead(X)', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.margin = '0';
+            equals.style.alignSelf = 'center';
+            mainContainer.appendChild(equals);
+            
+            renderMatrixHorizontal(mainContainer, state.finalOutput, 'Output', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderLayerNorm(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px';
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            renderMatrixHorizontal(mainContainer, state.finalOutput, 'Input', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const norm = document.createElement('div');
+            norm.className = 'arrow';
+            norm.textContent = 'LayerNorm →';
+            norm.style.margin = '0';
+            norm.style.alignSelf = 'center';
+            mainContainer.appendChild(norm);
+            
+            renderMatrixHorizontal(mainContainer, state.layerNormOutput, 'Normalized Output', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderMLP(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px';
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            renderMatrixHorizontal(mainContainer, state.layerNormOutput, 'MLP Input', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const mult1 = document.createElement('div');
+            mult1.className = 'arrow';
+            mult1.textContent = '×';
+            mult1.style.margin = '0';
+            mult1.style.alignSelf = 'center';
+            mainContainer.appendChild(mult1);
+            
+            renderMatrix(mainContainer, state.W1, 'W₁', 
+                `${state.dModel} × ${state.dModel * 4}`);
+            
+            const gelu = document.createElement('div');
+            gelu.className = 'arrow';
+            gelu.textContent = 'GELU →';
+            gelu.style.margin = '0';
+            gelu.style.alignSelf = 'center';
+            mainContainer.appendChild(gelu);
+            
+            renderMatrixHorizontal(mainContainer, state.mlpHidden, 'Hidden', 
+                `${state.tokens.length} × ${state.dModel * 4}`);
+            
+            const mult2 = document.createElement('div');
+            mult2.className = 'arrow';
+            mult2.textContent = '×';
+            mult2.style.margin = '0';
+            mult2.style.alignSelf = 'center';
+            mainContainer.appendChild(mult2);
+            
+            renderMatrix(mainContainer, state.W2, 'W₂', 
+                `${state.dModel * 4} × ${state.dModel}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.margin = '0';
+            equals.style.alignSelf = 'center';
+            mainContainer.appendChild(equals);
+            
+            renderMatrixHorizontal(mainContainer, state.mlpOutput, 'MLP Output', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderSecondResidual(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px';
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            renderMatrixHorizontal(mainContainer, state.layerNormOutput, 'MLP Input', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const plus = document.createElement('div');
+            plus.className = 'arrow';
+            plus.textContent = '+';
+            plus.style.margin = '0';
+            plus.style.alignSelf = 'center';
+            mainContainer.appendChild(plus);
+            
+            renderMatrixHorizontal(mainContainer, state.mlpOutput, 'MLP Output', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.margin = '0';
+            equals.style.alignSelf = 'center';
+            mainContainer.appendChild(equals);
+            
+            renderMatrixHorizontal(mainContainer, state.finalOutput2, 'Output', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderSecondLayerNorm(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '2rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Tokens column on the left
+            const tokensColumn = document.createElement('div');
+            tokensColumn.style.display = 'flex';
+            tokensColumn.style.flexDirection = 'column';
+            tokensColumn.style.gap = '4px';
+            tokensColumn.style.marginTop = '70px';
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokensColumn.appendChild(tokenDiv);
+            });
+            
+            mainContainer.appendChild(tokensColumn);
+            
+            const arrow1 = document.createElement('div');
+            arrow1.className = 'arrow';
+            arrow1.textContent = '→';
+            arrow1.style.margin = '0';
+            arrow1.style.alignSelf = 'center';
+            mainContainer.appendChild(arrow1);
+            
+            renderMatrixHorizontal(mainContainer, state.finalOutput2, 'LayerNorm Input', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            const norm = document.createElement('div');
+            norm.className = 'arrow';
+            norm.textContent = 'LayerNorm →';
+            norm.style.margin = '0';
+            norm.style.alignSelf = 'center';
+            mainContainer.appendChild(norm);
+            
+            renderMatrixHorizontal(mainContainer, state.layerNormOutput2, 'Final Output', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderSummary(container) {
+            const mainContainer = document.createElement('div');
+            mainContainer.style.display = 'flex';
+            mainContainer.style.alignItems = 'flex-start';
+            mainContainer.style.gap = '3rem';
+            mainContainer.style.justifyContent = 'center';
+            mainContainer.style.flexWrap = 'wrap';
+            
+            // Original Input Embeddings Section
+            const inputSection = document.createElement('div');
+            inputSection.style.display = 'flex';
+            inputSection.style.alignItems = 'flex-start';
+            inputSection.style.gap = '2rem';
+            
+            // Input Sequence heading and tokens column
+            const inputTokensSection = document.createElement('div');
+            inputTokensSection.style.display = 'flex';
+            inputTokensSection.style.flexDirection = 'column';
+            inputTokensSection.style.alignItems = 'center';
+            
+            const sequenceHeading = document.createElement('div');
+            sequenceHeading.style.fontSize = '1.1rem';
+            sequenceHeading.style.color = 'var(--accent-blue)';
+            sequenceHeading.style.marginBottom = '0.5rem';
+            sequenceHeading.style.fontWeight = '600';
+            sequenceHeading.style.height = '1.65rem'; // Fixed height for heading
+            sequenceHeading.textContent = 'Input Sequence';
+            inputTokensSection.appendChild(sequenceHeading);
+            
+            // Add spacer to account for matrix label and dimensions (70px from renderMatrixHorizontal)
+            const spacer = document.createElement('div');
+            spacer.style.height = '70px';
+            inputTokensSection.appendChild(spacer);
+            
+            const tokensColumnInput = document.createElement('div');
+            tokensColumnInput.style.display = 'flex';
+            tokensColumnInput.style.flexDirection = 'column';
+            tokensColumnInput.style.gap = '4px';
+            
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.height = '40px';
+                tokenDiv.style.display = 'flex';
+                tokenDiv.style.alignItems = 'center';
+                tokenDiv.style.justifyContent = 'center';
+                tokensColumnInput.appendChild(tokenDiv);
+            });
+            
+            inputTokensSection.appendChild(tokensColumnInput);
+            inputSection.appendChild(inputTokensSection);
+            
+            const arrowInput = document.createElement('div');
+            arrowInput.className = 'arrow';
+            arrowInput.textContent = '→';
+            arrowInput.style.margin = '0';
+            arrowInput.style.alignSelf = 'center';
+            arrowInput.style.marginTop = '91.65px'; // heading height + spacer height
+            inputSection.appendChild(arrowInput);
+            
+            renderMatrixHorizontal(inputSection, state.X, 'Input Embeddings', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            mainContainer.appendChild(inputSection);
+            
+            // Large arrow between sections
+            const transformArrow = document.createElement('div');
+            transformArrow.className = 'arrow';
+            transformArrow.textContent = '→';
+            transformArrow.style.fontSize = '3rem';
+            transformArrow.style.alignSelf = 'center';
+            transformArrow.style.marginTop = '91.65px'; // Same as arrowInput
+            mainContainer.appendChild(transformArrow);
+            
+            // Final Output Section
+            const outputSection = document.createElement('div');
+            outputSection.style.display = 'flex';
+            outputSection.style.alignItems = 'flex-start';
+            outputSection.style.gap = '2rem';
+            
+            renderMatrixHorizontal(outputSection, state.layerNormOutput2, 'Output Embeddings', 
+                `${state.tokens.length} × ${state.dModel}`);
+            
+            mainContainer.appendChild(outputSection);
+            
+            container.appendChild(mainContainer);
+        }
+        
+        function renderMatrix(container, matrix, label, dimensions, showValues = false, isHeatmap = false) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'matrix-wrapper';
+            
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'matrix-label';
+            labelDiv.textContent = label;
+            wrapper.appendChild(labelDiv);
+            
+            const dimDiv = document.createElement('div');
+            dimDiv.className = 'matrix-dimensions';
+            dimDiv.textContent = dimensions;
+            wrapper.appendChild(dimDiv);
+            
+            const matrixDiv = document.createElement('div');
+            matrixDiv.className = 'matrix';
+            
+            // Always show full matrix
+            matrix.forEach((row, i) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'matrix-row';
+                
+                row.forEach((val, j) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'matrix-cell';
+                    
+                    if (isHeatmap) {
+                        cellDiv.classList.add('heatmap-cell');
+                        const color = getHeatmapColor(val);
+                        cellDiv.style.backgroundColor = color;
+                    }
+                    
+                    if (showValues) {
+                        cellDiv.textContent = val.toFixed(2);
+                    }
+                    
+                    // Tooltip
+                    cellDiv.addEventListener('mouseenter', (e) => {
+                        showTooltip(e, `[${i},${j}] = ${val.toFixed(4)}`);
+                    });
+                    
+                    cellDiv.addEventListener('mouseleave', hideTooltip);
+                    
+                    rowDiv.appendChild(cellDiv);
+                });
+                
+                matrixDiv.appendChild(rowDiv);
+            });
+            
+            wrapper.appendChild(matrixDiv);
+            container.appendChild(wrapper);
+        }
+        
+        function renderMatrixWithRowSums(container, matrix, label, dimensions, showValues = false, isHeatmap = false) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'matrix-wrapper';
+            
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'matrix-label';
+            labelDiv.textContent = label;
+            wrapper.appendChild(labelDiv);
+            
+            const dimDiv = document.createElement('div');
+            dimDiv.className = 'matrix-dimensions';
+            dimDiv.textContent = dimensions;
+            wrapper.appendChild(dimDiv);
+            
+            const containerDiv = document.createElement('div');
+            containerDiv.style.display = 'flex';
+            containerDiv.style.alignItems = 'center';
+            containerDiv.style.gap = '1rem';
+            
+            const matrixDiv = document.createElement('div');
+            matrixDiv.className = 'matrix';
+            
+            // Always show full matrix
+            matrix.forEach((row, i) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'matrix-row';
+                
+                row.forEach((val, j) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'matrix-cell';
+                    
+                    if (isHeatmap) {
+                        cellDiv.classList.add('heatmap-cell');
+                        const color = getHeatmapColor(val);
+                        cellDiv.style.backgroundColor = color;
+                    }
+                    
+                    if (showValues) {
+                        cellDiv.textContent = val.toFixed(2);
+                    }
+                    
+                    // Tooltip
+                    cellDiv.addEventListener('mouseenter', (e) => {
+                        showTooltip(e, `[${i},${j}] = ${val.toFixed(4)}`);
+                    });
+                    
+                    cellDiv.addEventListener('mouseleave', hideTooltip);
+                    
+                    rowDiv.appendChild(cellDiv);
+                });
+                
+                matrixDiv.appendChild(rowDiv);
+            });
+            
+            containerDiv.appendChild(matrixDiv);
+            
+            // Add row sums
+            const rowSumsDiv = document.createElement('div');
+            rowSumsDiv.style.display = 'flex';
+            rowSumsDiv.style.flexDirection = 'column';
+            rowSumsDiv.style.gap = '0';
+            
+            matrix.forEach((row, i) => {
+                const sum = row.reduce((a, b) => a + b, 0);
+                const sumDiv = document.createElement('div');
+                sumDiv.style.height = '40px';
+                sumDiv.style.display = 'flex';
+                sumDiv.style.alignItems = 'center';
+                sumDiv.style.fontFamily = "'JetBrains Mono', monospace";
+                sumDiv.style.fontSize = '0.85rem';
+                sumDiv.style.color = 'var(--accent-gold)';
+                sumDiv.style.paddingLeft = '0.5rem';
+                sumDiv.textContent = `Σ = ${sum.toFixed(4)}`;
+                
+                sumDiv.addEventListener('mouseenter', (e) => {
+                    showTooltip(e, `Row ${i} sum: ${sum.toFixed(6)} (should be 1.0)`);
+                });
+                
+                sumDiv.addEventListener('mouseleave', hideTooltip);
+                
+                rowSumsDiv.appendChild(sumDiv);
+            });
+            
+            containerDiv.appendChild(rowSumsDiv);
+            wrapper.appendChild(containerDiv);
+            container.appendChild(wrapper);
+        }
+        
+        function renderMatrixHorizontal(container, matrix, label, dimensions) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'matrix-wrapper';
+            
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'matrix-label';
+            labelDiv.textContent = label;
+            wrapper.appendChild(labelDiv);
+            
+            const dimDiv = document.createElement('div');
+            dimDiv.className = 'matrix-dimensions';
+            dimDiv.textContent = dimensions;
+            wrapper.appendChild(dimDiv);
+            
+            const matrixDiv = document.createElement('div');
+            matrixDiv.className = 'matrix';
+            matrixDiv.style.border = 'none';
+            matrixDiv.style.background = 'transparent';
+            
+            // Determine matrix type for tooltip
+            const isInputMatrix = label.includes('X');
+            const isQueryMatrix = label.includes('Q') && !label.includes('W');
+            const isKeyMatrix = label.includes('K') && !label.includes('W');
+            const isValueMatrix = label.includes('V') && !label.includes('W');
+            const isOutputMatrix = label.includes('Output');
+            
+            // Render each row as a distinct horizontal vector with blue border
+            matrix.forEach((row, i) => {
+                const rowContainer = document.createElement('div');
+                rowContainer.style.display = 'flex';
+                rowContainer.style.alignItems = 'center';
+                rowContainer.style.marginBottom = i < matrix.length - 1 ? '4px' : '0';
+                
+                // Row vector with blue border
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'matrix-row';
+                rowDiv.style.border = '2px solid var(--accent-blue)';
+                rowDiv.style.borderRadius = '4px';
+                rowDiv.style.background = 'var(--matrix-bg)';
+                
+                row.forEach((val, j) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'matrix-cell';
+                    cellDiv.style.border = '1px solid var(--border)';
+                    cellDiv.textContent = val.toFixed(2);
+                    
+                    // Tooltip with context-specific information
+                    cellDiv.addEventListener('mouseenter', (e) => {
+                        let tooltipText = '';
+                        if (isInputMatrix) {
+                            tooltipText = `Token "${state.tokens[i]}" embedding[${j}] = ${val.toFixed(4)}`;
+                        } else if (isQueryMatrix) {
+                            tooltipText = `Token "${state.tokens[i]}" query[${j}] = ${val.toFixed(4)}`;
+                        } else if (isKeyMatrix) {
+                            tooltipText = `Token "${state.tokens[i]}" key[${j}] = ${val.toFixed(4)}`;
+                        } else if (isValueMatrix) {
+                            tooltipText = `Token "${state.tokens[i]}" value[${j}] = ${val.toFixed(4)}`;
+                        } else if (isOutputMatrix) {
+                            tooltipText = `Token "${state.tokens[i]}" output[${j}] = ${val.toFixed(4)}`;
+                        } else {
+                            tooltipText = `[${i},${j}] = ${val.toFixed(4)}`;
+                        }
+                        showTooltip(e, tooltipText);
+                    });
+                    
+                    cellDiv.addEventListener('mouseleave', hideTooltip);
+                    
+                    rowDiv.appendChild(cellDiv);
+                });
+                
+                rowContainer.appendChild(rowDiv);
+                matrixDiv.appendChild(rowContainer);
+            });
+            
+            wrapper.appendChild(matrixDiv);
+            container.appendChild(wrapper);
+        }
+        
+        function getHeatmapColor(value) {
+            // Normalize value to 0-1 range for attention weights
+            const normalized = Math.max(0, Math.min(1, value));
+            
+            // Create a blue to yellow gradient
+            const r = Math.floor(normalized * 255);
+            const g = Math.floor(normalized * 200);
+            const b = Math.floor((1 - normalized) * 255);
+            
+            return `rgba(${r}, ${g}, ${b}, ${0.3 + normalized * 0.7})`;
+        }
+        
+        function showTooltip(e, text) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.textContent = text;
+            tooltip.style.left = e.pageX + 10 + 'px';
+            tooltip.style.top = e.pageY + 10 + 'px';
+            tooltip.classList.add('show');
+        }
+        
+        function hideTooltip() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.classList.remove('show');
+        }
+        
+        // Controls
+        document.getElementById('step-forward').addEventListener('click', () => {
+            if (state.currentStep < steps.length - 1) {
+                state.currentStep++;
+                render();
+            }
+        });
+        
+        document.getElementById('step-back').addEventListener('click', () => {
+            if (state.currentStep > 0) {
+                state.currentStep--;
+                render();
+            }
+        });
+        
+        document.getElementById('play-pause').addEventListener('click', () => {
+            state.isPlaying = !state.isPlaying;
+            const btn = document.getElementById('play-pause');
+            btn.textContent = state.isPlaying ? '⏸ Pause' : '▶ Play';
+            
+            if (state.isPlaying) {
+                playAnimation();
+            }
+        });
+        
+        document.getElementById('reset').addEventListener('click', () => {
+            state.currentStep = 0;
+            state.isPlaying = false;
+            document.getElementById('play-pause').textContent = '▶ Play';
+            initialize();
+        });
+        
+        document.getElementById('input-text').addEventListener('change', (e) => {
+            state.inputText = e.target.value;
+            state.currentStep = 0;
+            state.isPlaying = false;
+            document.getElementById('play-pause').textContent = '▶ Play';
+            initialize();
+        });
+        
+        document.getElementById('d-model').addEventListener('change', (e) => {
+            state.dModel = parseInt(e.target.value);
+            state.currentStep = 0;
+            state.isPlaying = false;
+            document.getElementById('play-pause').textContent = '▶ Play';
+            initialize();
+        });
+        
+        document.getElementById('d-k').addEventListener('change', (e) => {
+            state.dK = parseInt(e.target.value);
+            state.currentStep = 0;
+            state.isPlaying = false;
+            document.getElementById('play-pause').textContent = '▶ Play';
+            initialize();
+        });
+        
+        function playAnimation() {
+            if (!state.isPlaying) return;
+            
+            if (state.currentStep < steps.length - 1) {
+                state.currentStep++;
+                render();
+                setTimeout(playAnimation, 2000);
+            } else {
+                state.isPlaying = false;
+                document.getElementById('play-pause').textContent = '▶ Play';
+            }
+        }
+        
+        // Initialize on load
+        initialize();
+    </script>
+</body>
+</html>

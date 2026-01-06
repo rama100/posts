@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single-Head Attention Visualizer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #141b2d;
+            --accent-blue: #4a9eff;
+            --accent-gold: #ffa94d;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --border: #2a3447;
+            --matrix-bg: #1a2332;
+        }
+        
+        body {
+            font-family: 'Crimson Pro', serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+        
+        .controls-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            animation: fadeIn 1s ease-out 0.2s both;
+        }
+        
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--matrix-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+        }
+        
+        .param-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .playback-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+        
+        button {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Crimson Pro', serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        button:hover {
+            background: var(--accent-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 169, 77, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .visualization-area {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            min-height: 600px;
+            animation: fadeIn 1s ease-out 0.4s both;
+        }
+        
+        .step-indicator {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--matrix-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-blue);
+        }
+        
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-gold);
+        }
+        
+        .step-formula {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+        
+        .matrices-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .matrix-wrapper {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .matrix-label {
+            text-align: center;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+        }
+        
+        .matrix-dimensions {
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .matrix {
+            display: inline-block;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--matrix-bg);
+        }
+        
+        .matrix-row {
+            display: flex;
+        }
+        
+        .matrix-cell {
+            min-width: 60px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .matrix-cell:hover {
+            background: rgba(74, 158, 255, 0.1);
+            z-index: 10;
+        }
+        
+        .matrix-cell.highlight {
+            background: rgba(74, 158, 255, 0.2);
+            border-color: var(--accent-blue);
+        }
+        
+        .heatmap-cell {
+            background: var(--matrix-bg);
+            transition: background-color 0.3s;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: var(--bg-primary);
+            border: 1px solid var(--accent-blue);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tooltip.show {
+            opacity: 1;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 2rem;
+            color: var(--accent-gold);
+            margin: 1rem 0;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+        
+        .tokens-display {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        
+        .token {
+            padding: 0.75rem 1.25rem;
+            background: var(--matrix-bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            color: var(--accent-gold);
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Single-Head Attention Mechanism</h1>
+            <p class="subtitle">Interactive Visualization of Transformer Attention</p>
+        </header>
+        
+        <div class="controls-panel">
+            <div class="control-group">
+                <label for="input-text">Input Sequence</label>
+                <input type="text" id="input-text" value="The cat sat on the">
+            </div>
+            
+            <div class="param-inputs">
+                <div class="control-group">
+                    <label for="d-model">d_model (embedding dimension)</label>
+                    <input type="number" id="d-model" value="64" min="8" max="512" step="8">
+                </div>
+                
+                <div class="control-group">
+                    <label for="d-k">d_k (query/key dimension)</label>
+                    <input type="number" id="d-k" value="64" min="8" max="512" step="8">
+                </div>
+            </div>
+            
+            <div class="playback-controls">
+                <button id="step-back">← Step Back</button>
+                <button id="play-pause">▶ Play</button>
+                <button id="step-forward">Step Forward →</button>
+                <button id="reset">Reset</button>
+            </div>
+        </div>
+        
+        <div class="visualization-area">
+            <div class="step-indicator">
+                <div class="step-title" id="step-title">Step 0: Input Embeddings</div>
+                <div class="step-formula" id="step-formula">X ∈ ℝ^(seq_len × d_model)</div>
+            </div>
+            
+            <div id="visualization-content">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // State management
+        let state = {
+            currentStep: 0,
+            isPlaying: false,
+            inputText: "The cat sat on the",
+            dModel: 64,
+            dK: 64,
+            tokens: [],
+            X: null,  // Input embeddings
+            Wq: null, // Query weight matrix
+            Wk: null, // Key weight matrix
+            Wv: null, // Value weight matrix
+            Q: null,  // Query matrix
+            K: null,  // Key matrix
+            V: null,  // Value matrix
+            scores: null, // Attention scores (Q·K^T)
+            scaledScores: null, // Scaled scores
+            weights: null, // Attention weights (softmax)
+            output: null  // Final output (weights·V)
+        };
+        
+        const steps = [
+            {
+                title: "Step 0: Input Embeddings",
+                formula: "X ∈ ℝ^(seq_len × d_model)",
+                description: "Each token is represented as a d_model-dimensional vector"
+            },
+            {
+                title: "Step 1: Create Query Matrix",
+                formula: "Q = X · W_q, where W_q ∈ ℝ^(d_model × d_k)",
+                description: "Linear transformation to create queries"
+            },
+            {
+                title: "Step 2: Create Key Matrix",
+                formula: "K = X · W_k, where W_k ∈ ℝ^(d_model × d_k)",
+                description: "Linear transformation to create keys"
+            },
+            {
+                title: "Step 3: Create Value Matrix",
+                formula: "V = X · W_v, where W_v ∈ ℝ^(d_model × d_k)",
+                description: "Linear transformation to create values"
+            },
+            {
+                title: "Step 4: Compute Attention Scores",
+                formula: "scores = Q · K^T ∈ ℝ^(seq_len × seq_len)",
+                description: "Measure similarity between queries and keys"
+            },
+            {
+                title: "Step 5: Scale Scores",
+                formula: "scaled_scores = scores / √d_k",
+                description: "Scale by square root of key dimension for stability"
+            },
+            {
+                title: "Step 6: Apply Softmax",
+                formula: "weights = softmax(scaled_scores)",
+                description: "Convert scores to probability distribution"
+            },
+            {
+                title: "Step 7: Compute Output",
+                formula: "output = weights · V ∈ ℝ^(seq_len × d_k)",
+                description: "Weighted combination of value vectors"
+            }
+        ];
+        
+        // Initialize
+        function initialize() {
+            state.tokens = state.inputText.trim().split(/\s+/);
+            const seqLen = state.tokens.length;
+            
+            // Initialize matrices with random values
+            state.X = randomMatrix(seqLen, state.dModel);
+            state.Wq = randomMatrix(state.dModel, state.dK);
+            state.Wk = randomMatrix(state.dModel, state.dK);
+            state.Wv = randomMatrix(state.dModel, state.dK);
+            
+            // Compute matrices
+            state.Q = matmul(state.X, state.Wq);
+            state.K = matmul(state.X, state.Wk);
+            state.V = matmul(state.X, state.Wv);
+            state.scores = matmul(state.Q, transpose(state.K));
+            state.scaledScores = scaleMatrix(state.scores, 1 / Math.sqrt(state.dK));
+            state.weights = softmaxMatrix(state.scaledScores);
+            state.output = matmul(state.weights, state.V);
+            
+            render();
+        }
+        
+        // Matrix operations
+        function randomMatrix(rows, cols) {
+            return Array(rows).fill(0).map(() => 
+                Array(cols).fill(0).map(() => (Math.random() - 0.5) * 2)
+            );
+        }
+        
+        function matmul(A, B) {
+            const rows = A.length;
+            const cols = B[0].length;
+            const inner = B.length;
+            const result = Array(rows).fill(0).map(() => Array(cols).fill(0));
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    for (let k = 0; k < inner; k++) {
+                        result[i][j] += A[i][k] * B[k][j];
+                    }
+                }
+            }
+            return result;
+        }
+        
+        function transpose(A) {
+            const rows = A.length;
+            const cols = A[0].length;
+            const result = Array(cols).fill(0).map(() => Array(rows).fill(0));
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[j][i] = A[i][j];
+                }
+            }
+            return result;
+        }
+        
+        function scaleMatrix(A, scale) {
+            return A.map(row => row.map(val => val * scale));
+        }
+        
+        function softmaxMatrix(A) {
+            return A.map(row => softmax(row));
+        }
+        
+        function softmax(arr) {
+            const max = Math.max(...arr);
+            const exps = arr.map(x => Math.exp(x - max));
+            const sum = exps.reduce((a, b) => a + b, 0);
+            return exps.map(x => x / sum);
+        }
+        
+        // Rendering
+        function render() {
+            const stepInfo = steps[state.currentStep];
+            document.getElementById('step-title').textContent = stepInfo.title;
+            document.getElementById('step-formula').textContent = stepInfo.formula;
+            
+            const content = document.getElementById('visualization-content');
+            content.innerHTML = '';
+            
+            switch(state.currentStep) {
+                case 0:
+                    renderInputEmbeddings(content);
+                    break;
+                case 1:
+                    renderQueryCreation(content);
+                    break;
+                case 2:
+                    renderKeyCreation(content);
+                    break;
+                case 3:
+                    renderValueCreation(content);
+                    break;
+                case 4:
+                    renderAttentionScores(content);
+                    break;
+                case 5:
+                    renderScaledScores(content);
+                    break;
+                case 6:
+                    renderAttentionWeights(content);
+                    break;
+                case 7:
+                    renderOutput(content);
+                    break;
+            }
+        }
+        
+        function renderInputEmbeddings(container) {
+            const tokensDiv = document.createElement('div');
+            tokensDiv.className = 'tokens-display';
+            state.tokens.forEach((token, i) => {
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token';
+                tokenDiv.textContent = token;
+                tokenDiv.style.animationDelay = `${i * 0.1}s`;
+                tokensDiv.appendChild(tokenDiv);
+            });
+            container.appendChild(tokensDiv);
+            
+            const arrow = document.createElement('div');
+            arrow.className = 'arrow';
+            arrow.textContent = '↓';
+            container.appendChild(arrow);
+            
+            renderMatrix(container, state.X, 'X (Input Embeddings)', 
+                `${state.tokens.length} × ${state.dModel}`, true);
+        }
+        
+        function renderQueryCreation(container) {
+            const matricesContainer = document.createElement('div');
+            matricesContainer.className = 'matrices-container';
+            
+            renderMatrix(matricesContainer, state.X, 'X', 
+                `${state.tokens.length} × ${state.dModel}`, true);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.alignSelf = 'center';
+            matricesContainer.appendChild(mult);
+            
+            renderMatrix(matricesContainer, state.Wq, 'W_q', 
+                `${state.dModel} × ${state.dK}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.alignSelf = 'center';
+            matricesContainer.appendChild(equals);
+            
+            renderMatrix(matricesContainer, state.Q, 'Q (Query)', 
+                `${state.tokens.length} × ${state.dK}`, true);
+            
+            container.appendChild(matricesContainer);
+        }
+        
+        function renderKeyCreation(container) {
+            const matricesContainer = document.createElement('div');
+            matricesContainer.className = 'matrices-container';
+            
+            renderMatrix(matricesContainer, state.X, 'X', 
+                `${state.tokens.length} × ${state.dModel}`, true);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.alignSelf = 'center';
+            matricesContainer.appendChild(mult);
+            
+            renderMatrix(matricesContainer, state.Wk, 'W_k', 
+                `${state.dModel} × ${state.dK}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.alignSelf = 'center';
+            matricesContainer.appendChild(equals);
+            
+            renderMatrix(matricesContainer, state.K, 'K (Key)', 
+                `${state.tokens.length} × ${state.dK}`, true);
+            
+            container.appendChild(matricesContainer);
+        }
+        
+        function renderValueCreation(container) {
+            const matricesContainer = document.createElement('div');
+            matricesContainer.className = 'matrices-container';
+            
+            renderMatrix(matricesContainer, state.X, 'X', 
+                `${state.tokens.length} × ${state.dModel}`, true);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.alignSelf = 'center';
+            matricesContainer.appendChild(mult);
+            
+            renderMatrix(matricesContainer, state.Wv, 'W_v', 
+                `${state.dModel} × ${state.dK}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.alignSelf = 'center';
+            matricesContainer.appendChild(equals);
+            
+            renderMatrix(matricesContainer, state.V, 'V (Value)', 
+                `${state.tokens.length} × ${state.dK}`, true);
+            
+            container.appendChild(matricesContainer);
+        }
+        
+        function renderAttentionScores(container) {
+            const matricesContainer = document.createElement('div');
+            matricesContainer.className = 'matrices-container';
+            
+            renderMatrix(matricesContainer, state.Q, 'Q', 
+                `${state.tokens.length} × ${state.dK}`, true);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.alignSelf = 'center';
+            matricesContainer.appendChild(mult);
+            
+            renderMatrix(matricesContainer, transpose(state.K), 'K^T', 
+                `${state.dK} × ${state.tokens.length}`);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.alignSelf = 'center';
+            matricesContainer.appendChild(equals);
+            
+            renderMatrix(matricesContainer, state.scores, 'Scores', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            container.appendChild(matricesContainer);
+        }
+        
+        function renderScaledScores(container) {
+            const matricesContainer = document.createElement('div');
+            matricesContainer.className = 'matrices-container';
+            
+            renderMatrix(matricesContainer, state.scores, 'Scores', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            const div = document.createElement('div');
+            div.className = 'arrow';
+            div.textContent = `÷ √${state.dK}`;
+            div.style.alignSelf = 'center';
+            matricesContainer.appendChild(div);
+            
+            renderMatrix(matricesContainer, state.scaledScores, 'Scaled Scores', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            container.appendChild(matricesContainer);
+        }
+        
+        function renderAttentionWeights(container) {
+            const matricesContainer = document.createElement('div');
+            matricesContainer.className = 'matrices-container';
+            
+            renderMatrix(matricesContainer, state.scaledScores, 'Scaled Scores', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            const softmax = document.createElement('div');
+            softmax.className = 'arrow';
+            softmax.textContent = 'softmax →';
+            softmax.style.alignSelf = 'center';
+            matricesContainer.appendChild(softmax);
+            
+            renderMatrix(matricesContainer, state.weights, 'Attention Weights', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            container.appendChild(matricesContainer);
+        }
+        
+        function renderOutput(container) {
+            const matricesContainer = document.createElement('div');
+            matricesContainer.className = 'matrices-container';
+            
+            renderMatrix(matricesContainer, state.weights, 'Attention Weights', 
+                `${state.tokens.length} × ${state.tokens.length}`, true, true);
+            
+            const mult = document.createElement('div');
+            mult.className = 'arrow';
+            mult.textContent = '×';
+            mult.style.alignSelf = 'center';
+            matricesContainer.appendChild(mult);
+            
+            renderMatrix(matricesContainer, state.V, 'V', 
+                `${state.tokens.length} × ${state.dK}`, true);
+            
+            const equals = document.createElement('div');
+            equals.className = 'arrow';
+            equals.textContent = '=';
+            equals.style.alignSelf = 'center';
+            matricesContainer.appendChild(equals);
+            
+            renderMatrix(matricesContainer, state.output, 'Output', 
+                `${state.tokens.length} × ${state.dK}`, true);
+            
+            container.appendChild(matricesContainer);
+        }
+        
+        function renderMatrix(container, matrix, label, dimensions, showValues = false, isHeatmap = false) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'matrix-wrapper';
+            
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'matrix-label';
+            labelDiv.textContent = label;
+            wrapper.appendChild(labelDiv);
+            
+            const dimDiv = document.createElement('div');
+            dimDiv.className = 'matrix-dimensions';
+            dimDiv.textContent = dimensions;
+            wrapper.appendChild(dimDiv);
+            
+            const matrixDiv = document.createElement('div');
+            matrixDiv.className = 'matrix';
+            
+            // Determine whether to show full matrix or sample
+            const maxDisplay = 8;
+            const displayMatrix = matrix.length > maxDisplay || matrix[0].length > maxDisplay
+                ? sampleMatrix(matrix, maxDisplay)
+                : matrix;
+            
+            displayMatrix.forEach((row, i) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'matrix-row';
+                
+                row.forEach((val, j) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'matrix-cell';
+                    
+                    if (isHeatmap) {
+                        cellDiv.classList.add('heatmap-cell');
+                        const color = getHeatmapColor(val);
+                        cellDiv.style.backgroundColor = color;
+                    }
+                    
+                    if (showValues) {
+                        cellDiv.textContent = val.toFixed(2);
+                    }
+                    
+                    // Tooltip
+                    cellDiv.addEventListener('mouseenter', (e) => {
+                        showTooltip(e, `[${i},${j}] = ${val.toFixed(4)}`);
+                    });
+                    
+                    cellDiv.addEventListener('mouseleave', hideTooltip);
+                    
+                    rowDiv.appendChild(cellDiv);
+                });
+                
+                matrixDiv.appendChild(rowDiv);
+            });
+            
+            wrapper.appendChild(matrixDiv);
+            container.appendChild(wrapper);
+        }
+        
+        function sampleMatrix(matrix, maxSize) {
+            if (matrix.length <= maxSize && matrix[0].length <= maxSize) {
+                return matrix;
+            }
+            
+            const result = [];
+            const rowStep = Math.max(1, Math.floor(matrix.length / maxSize));
+            const colStep = Math.max(1, Math.floor(matrix[0].length / maxSize));
+            
+            for (let i = 0; i < Math.min(maxSize, matrix.length); i += rowStep) {
+                const row = [];
+                for (let j = 0; j < Math.min(maxSize, matrix[0].length); j += colStep) {
+                    row.push(matrix[i][j]);
+                }
+                result.push(row);
+            }
+            
+            return result;
+        }
+        
+        function getHeatmapColor(value) {
+            // Normalize value to 0-1 range for attention weights
+            const normalized = Math.max(0, Math.min(1, value));
+            
+            // Create a blue to yellow gradient
+            const r = Math.floor(normalized * 255);
+            const g = Math.floor(normalized * 200);
+            const b = Math.floor((1 - normalized) * 255);
+            
+            return `rgba(${r}, ${g}, ${b}, ${0.3 + normalized * 0.7})`;
+        }
+        
+        function showTooltip(e, text) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.textContent = text;
+            tooltip.style.left = e.pageX + 10 + 'px';
+            tooltip.style.top = e.pageY + 10 + 'px';
+            tooltip.classList.add('show');
+        }
+        
+        function hideTooltip() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.classList.remove('show');
+        }
+        
+        // Controls
+        document.getElementById('step-forward').addEventListener('click', () => {
+            if (state.currentStep < steps.length - 1) {
+                state.currentStep++;
+                render();
+            }
+        });
+        
+        document.getElementById('step-back').addEventListener('click', () => {
+            if (state.currentStep > 0) {
+                state.currentStep--;
+                render();
+            }
+        });
+        
+        document.getElementById('play-pause').addEventListener('click', () => {
+            state.isPlaying = !state.isPlaying;
+            const btn = document.getElementById('play-pause');
+            btn.textContent = state.isPlaying ? '⏸ Pause' : '▶ Play';
+            
+            if (state.isPlaying) {
+                playAnimation();
+            }
+        });
+        
+        document.getElementById('reset').addEventListener('click', () => {
+            state.currentStep = 0;
+            state.isPlaying = false;
+            document.getElementById('play-pause').textContent = '▶ Play';
+            initialize();
+        });
+        
+        document.getElementById('input-text').addEventListener('change', (e) => {
+            state.inputText = e.target.value;
+            state.currentStep = 0;
+            state.isPlaying = false;
+            document.getElementById('play-pause').textContent = '▶ Play';
+            initialize();
+        });
+        
+        document.getElementById('d-model').addEventListener('change', (e) => {
+            state.dModel = parseInt(e.target.value);
+            state.currentStep = 0;
+            state.isPlaying = false;
+            document.getElementById('play-pause').textContent = '▶ Play';
+            initialize();
+        });
+        
+        document.getElementById('d-k').addEventListener('change', (e) => {
+            state.dK = parseInt(e.target.value);
+            state.currentStep = 0;
+            state.isPlaying = false;
+            document.getElementById('play-pause').textContent = '▶ Play';
+            initialize();
+        });
+        
+        function playAnimation() {
+            if (!state.isPlaying) return;
+            
+            if (state.currentStep < steps.length - 1) {
+                state.currentStep++;
+                render();
+                setTimeout(playAnimation, 2000);
+            } else {
+                state.isPlaying = false;
+                document.getElementById('play-pause').textContent = '▶ Play';
+            }
+        }
+        
+        // Initialize on load
+        initialize();
+    </script>
+</body>
+</html>
